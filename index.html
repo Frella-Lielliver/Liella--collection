@@ -13,32 +13,88 @@
      → プロジェクト設定 > アプリ > firebaseConfig をコピー
 ============================================================ -->
 <script type="module">
-  const STORAGE_KEY = "liella_cd_collection_owned_v1";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, onSnapshot }
+    from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
-  function loadOwned() {
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBqTJ5kbOvrrVHWrlJF2wnCKXb20KjcRoE",
+    authDomain:        "liella-collection.firebaseapp.com",
+    projectId:         "liella-collection",
+    storageBucket:     "liella-collection.firebasestorage.app",
+    messagingSenderId: "1434372741",
+    appId:             "1:1434372741:web:103d09e9f66713fceb77ec"
+  };
+
+  // ★ 編集できるオーナーのGmailアドレス（このアドレスのみ編集可能）
+  const OWNER_EMAIL = "tomoyadayo45105963@gmail.com";
+
+  // ─── Firebase 初期化 ───────────────────────────────────────
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+  const colRef = doc(db, "collection", "owned");
+
+  let owned   = {};
+  let isOwner = false;
+  let unsubSnap = null;
+
+  // ─── リアルタイム同期 ──────────────────────────────────────
+  function startSync() {
+    if (unsubSnap) unsubSnap();
+    unsubSnap = onSnapshot(colRef,
+      snap => {
+        owned = snap.exists() ? (snap.data().ids || {}) : {};
+        render();
+      },
+      err => {
+        console.error("Firestore同期エラー:", err);
+        render();
+      }
+    );
+  }
+
+  async function saveOwned() {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-    } catch {
-      return {};
+      await setDoc(colRef, { ids: owned });
+    } catch (e) {
+      console.error("保存エラー:", e);
+      alert("保存に失敗しました。ログイン状態とネット接続をご確認ください。");
     }
   }
 
-  let owned = loadOwned();
-
-  function saveOwned() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(owned));
-  }
-
-  function startSync() {
+  // ─── 認証 ────────────────────────────────────────────────
+  onAuthStateChanged(auth, user => {
+    isOwner = !!(user && user.email === OWNER_EMAIL);
+    updateAuthUI(user);
     render();
+  });
+
+  function updateAuthUI(user) {
+    const btn = document.getElementById("authBtn");
+    const badge = document.getElementById("ownerBadge");
+    if (!btn) return;
+    if (user) {
+      btn.textContent = "ログアウト";
+      btn.onclick = () => signOut(auth);
+      badge.style.display = isOwner ? "inline-flex" : "none";
+    } else {
+      btn.textContent = "Googleでログイン";
+      btn.onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
+      badge.style.display = "none";
+    }
   }
 
   // ─── チェック操作 ─────────────────────────────────────────
-  window.toggleOwned = (id) => {
+  window.toggleOwned = async (id) => {
+    if (!isOwner) return;          // オーナー以外は編集不可
     owned[id] = !owned[id];
-    saveOwned();
     render();
+    await saveOwned();
   };
+
   // ─── 描画 ─────────────────────────────────────────────────
   const TODAY = new Date();
   const CATS  = ["全て","アルバム","シングル","挿入歌","ユニット","BD特典","クラブ限定","その他"];
@@ -190,9 +246,9 @@
         const isOwned = !!owned[c.id];
         const fut     = isFuture(c.d);
         const ds      = c.d.slice(5).replace("-", "/");
-        const editable = `onclick="toggleOwned(${c.id})"`;
+        const editable = isOwner ? `onclick="toggleOwned(${c.id})"` : ``;
         html += `
-          <div class="cd-item${isOwned ? " is-owned" : ""} editable" ${editable}>
+          <div class="cd-item${isOwned ? " is-owned" : ""}${isOwner ? " editable" : ""}" ${editable}>
             <span class="check-icon">${isOwned ? "✓" : ""}</span>
             <div class="cd-info">
               <div class="cd-title">${c.t}${c.v ? `<span class="cd-ver">【${c.v}】</span>` : ""}</div>
@@ -396,15 +452,12 @@
   .cd-sub  { display: flex; gap: 6px; align-items: center; margin-top: 2px; flex-wrap: wrap; }
   .cd-note { font-size: 10px; color: var(--muted); }
   .official-link {
-  font-size: 10px;
-  color: var(--purple);
-  text-decoration: none;
-  font-weight: 700;
-}
-
-.official-link:hover {
-  text-decoration: underline;
-}
+    font-size: 10px;
+    color: var(--purple);
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .official-link:hover { text-decoration: underline; }
 
   .badge {
     font-size: 9px; padding: 1px 6px; border-radius: 8px;
@@ -453,10 +506,10 @@
   <div class="header-inner">
     <div class="site-title">Liella! CD Collection</div>
     <div class="site-sub">Love Live! Superstar!! Liella! ディスコグラフィー コレクション管理</div>
-      <div class="auth-row">
+    <div class="auth-row">
       <button id="authBtn">読み込み中…</button>
-     <span id="ownerBadge">★ オーナー編集モード</span>
-</div>
+      <span id="ownerBadge">★ オーナー編集モード</span>
+    </div>
   </div>
 </header>
 
@@ -505,8 +558,8 @@
   <div id="cdList"><div class="empty">読み込み中…</div></div>
 
   <div class="owner-note">
-  ※ チェック状態はこのブラウザに保存されます。他の端末・他の人とは共有されません。<br>
-  ※ 本ページは個人作成の非公式コレクション管理ページです。各商品の詳細は公式商品ページをご確認ください。
+    ※ チェックの編集はオーナーのみ可能です。閲覧はどなたでもできます。<br>
+    ※ 本ページは個人作成の非公式コレクション管理ページです。各商品の詳細は公式商品ページをご確認ください。
   </div>
 </main>
 
