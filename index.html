@@ -14,7 +14,8 @@
 ============================================================ -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+           setPersistence, browserLocalPersistence }
     from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
   import { getFirestore, doc, setDoc, onSnapshot }
     from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
@@ -66,11 +67,25 @@
   }
 
   // ─── 認証 ────────────────────────────────────────────────
-  onAuthStateChanged(auth, user => {
-    isOwner = !!(user && user.email === OWNER_EMAIL);
-    updateAuthUI(user);
-    render();
-  });
+  // 起動直後にボタンを既定状態へ初期化（コールバック未発火でも固まらないように）
+  updateAuthUI(null);
+
+  // ログイン永続化を明示し、その後で状態監視を開始する
+  setPersistence(auth, browserLocalPersistence)
+    .catch(e => console.error("永続化設定エラー:", e))
+    .finally(() => {
+      onAuthStateChanged(auth,
+        user => {
+          isOwner = !!(user && user.email === OWNER_EMAIL);
+          updateAuthUI(user);
+          render();
+        },
+        err => {
+          console.error("認証状態エラー:", err);
+          updateAuthUI(null);   // エラー時もログインボタンを出す
+        }
+      );
+    });
 
   function updateAuthUI(user) {
     const btn = document.getElementById("authBtn");
