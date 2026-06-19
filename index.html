@@ -132,9 +132,6 @@
   };
 
   // ─── インポート機能 ───────────────────────────────────────
-  // 有効な id の集合（照合用）
-  const VALID_IDS = new Set(CDS.map(c => c.id));
-
   // ファイル内容から id 配列を抽出（CSV / JSON 両対応）
   function parseImport(text) {
     text = text.trim();
@@ -299,6 +296,9 @@
     {id:79,t:"アイコトバ！",v:"CLUB CD SET 2024",d:"2024-07-26",c:"クラブ限定",n:"Liella! CLUB 2024特典 / 全13曲"},
     {id:80,t:"オレンジのままで",v:"CLUB CD SET 2025",d:"2025-07-26",c:"クラブ限定",n:"Liella! CLUB 2025特典"},
   ];
+
+  // 有効な id の集合（インポート照合用）— CDS 定義の後に置く
+  const VALID_IDS = new Set(CDS.map(c => c.id));
 
   let activeTab  = "全て";
   let showMode   = "all";
