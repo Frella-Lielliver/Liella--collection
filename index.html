@@ -14,8 +14,7 @@
 ============================================================ -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
-           setPersistence, browserLocalPersistence }
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
   import { getFirestore, doc, setDoc, onSnapshot }
     from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
@@ -42,19 +41,38 @@
   let isOwner = false;
   let unsubSnap = null;
 
+  // ─── エラーを画面に表示するヘルパー ───────────────────────
+  function showFatal(msg) {
+    let bar = document.getElementById("errBar");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "errBar";
+      bar.style.cssText = "background:#ffdede;color:#a00;padding:10px 14px;font-size:12px;text-align:center;position:sticky;top:0;z-index:200;white-space:pre-wrap;";
+      document.body.prepend(bar);
+    }
+    bar.textContent = "⚠ " + msg;
+  }
+
   // ─── リアルタイム同期 ──────────────────────────────────────
   function startSync() {
-    if (unsubSnap) unsubSnap();
-    unsubSnap = onSnapshot(colRef,
-      snap => {
-        owned = snap.exists() ? (snap.data().ids || {}) : {};
-        render();
-      },
-      err => {
-        console.error("Firestore同期エラー:", err);
-        render();
-      }
-    );
+    try {
+      if (unsubSnap) unsubSnap();
+      unsubSnap = onSnapshot(colRef,
+        snap => {
+          owned = snap.exists() ? (snap.data().ids || {}) : {};
+          render();
+        },
+        err => {
+          console.error("Firestore同期エラー:", err);
+          showFatal("データ同期エラー: " + (err.code || err.message));
+          render();   // それでもリストは出す
+        }
+      );
+    } catch (e) {
+      console.error("startSync例外:", e);
+      showFatal("同期開始に失敗: " + e.message);
+      render();
+    }
   }
 
   async function saveOwned() {
@@ -67,13 +85,9 @@
   }
 
   // ─── 認証 ────────────────────────────────────────────────
-  // 起動直後にボタンを既定状態へ初期化（コールバック未発火でも固まらないように）
-  updateAuthUI(null);
-
-  // ログイン永続化を明示し、その後で状態監視を開始する
-  setPersistence(auth, browserLocalPersistence)
-    .catch(e => console.error("永続化設定エラー:", e))
-    .finally(() => {
+  function initAuth() {
+    try {
+      updateAuthUI(null);   // まず既定ボタンを出す
       onAuthStateChanged(auth,
         user => {
           isOwner = !!(user && user.email === OWNER_EMAIL);
@@ -82,10 +96,14 @@
         },
         err => {
           console.error("認証状態エラー:", err);
-          updateAuthUI(null);   // エラー時もログインボタンを出す
+          updateAuthUI(null);
         }
       );
-    });
+    } catch (e) {
+      console.error("initAuth例外:", e);
+      showFatal("認証の初期化に失敗: " + e.message);
+    }
+  }
 
   function updateAuthUI(user) {
     const btn = document.getElementById("authBtn");
@@ -364,7 +382,17 @@
   }
   window.render = render;
 
-  // 初回リアルタイム同期スタート
+  // ─── 起動処理（順序が重要） ───────────────────────────────
+  // 1) まずリストを即描画（認証やデータ取得を待たない）
+  try {
+    render();
+  } catch (e) {
+    console.error("初回render例外:", e);
+    showFatal("画面描画エラー: " + e.message);
+  }
+  // 2) 認証監視を開始
+  initAuth();
+  // 3) Firestoreのリアルタイム同期を開始
   startSync();
 </script>
 
