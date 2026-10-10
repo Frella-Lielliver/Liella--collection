@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Liella! CDコレクション</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 
 <!-- ============================================================
   ★ Firebase設定（あなたの値に書き換えてください）
@@ -50,7 +50,7 @@
       bar.style.cssText = "background:#ffdede;color:#a00;padding:10px 14px;font-size:12px;text-align:center;position:sticky;top:0;z-index:200;white-space:pre-wrap;";
       document.body.prepend(bar);
     }
-    bar.textContent = "⚠ " + msg;
+    bar.textContent = msg;
   }
 
   // ─── リアルタイム同期 ──────────────────────────────────────
@@ -398,280 +398,215 @@
 
 <style>
   /* ─── リセット & ベース ─────────────────────────────────── */
+  /* 枠や角丸は使わず、余白と細い線で区切る */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --pink:    #FF6B9D;
-    --purple:  #9B59E8;
-    --sky:     #5BC8F5;
-    --yellow:  #FFD166;
-    --bg:      #FFF0F6;
+    --accent:  #9B59E8;
+    --bg:      #FFFFFF;
     --surface: #FFFFFF;
-    --border:  #FADADF;
-    --text:    #2D1144;
-    --muted:   #8B7095;
-    --owned:   #1DBF87;
+    --line:    #E7E3EC;
+    --text:    #2A2433;
+    --muted:   #7A7385;
+    --owned:   #12936A;
+    --miss:    #C2416B;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --accent:  #C39BF5;
+      --bg:      #1C1A21;
+      --surface: #1C1A21;
+      --line:    #37333F;
+      --text:    #ECE9F1;
+      --muted:   #A39DAE;
+      --owned:   #4FD1A5;
+      --miss:    #F28AAE;
+    }
   }
 
   body {
     font-family: "Noto Sans JP", sans-serif;
     background: var(--bg);
     color: var(--text);
+    line-height: 1.6;
     min-height: 100vh;
   }
+  button { font-family: inherit; }
 
   /* ─── ヘッダー ───────────────────────────────────────────── */
-  header {
-    background: linear-gradient(135deg, #FF6B9D 0%, #C44BE4 50%, #5BC8F5 100%);
-    padding: 2rem 1.5rem 1.5rem;
-    position: relative;
-    overflow: hidden;
+  header { padding: 2.5rem 1.25rem 1.5rem; }
+  .header-inner {
+    max-width: 760px; margin: 0 auto;
+    padding-bottom: 1.25rem; border-bottom: 1px solid var(--text);
   }
-  header::before {
-    content: "✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦";
-    position: absolute;
-    top: 8px; left: 0; right: 0;
-    text-align: center;
-    font-size: 10px;
-    color: rgba(255,255,255,.35);
-    letter-spacing: 8px;
+  .home-link {
+    display: inline-block; margin-bottom: 1rem;
+    font-size: 12px; color: var(--muted); text-decoration: none;
   }
-  .header-inner { max-width: 760px; margin: 0 auto; }
-  .site-title {
-    font-family: "Dela Gothic One", sans-serif;
-    font-size: clamp(1.6rem, 5vw, 2.4rem);
-    color: #fff;
-    text-shadow: 0 2px 12px rgba(0,0,0,.2);
-    letter-spacing: .02em;
-  }
-  .site-sub { font-size: 12px; color: rgba(255,255,255,.8); margin-top: 4px; }
+  .home-link:hover { color: var(--text); text-decoration: underline; }
+  .site-title { font-size: clamp(1.5rem, 5vw, 2rem); font-weight: 700; letter-spacing: .01em; }
+  .site-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
   .auth-row {
-    display: flex; align-items: center; gap: 10px;
-    margin-top: 1rem; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 1.25rem;
+    margin-top: 1rem; flex-wrap: wrap; font-size: 12px;
   }
-  #authBtn {
-    background: rgba(255,255,255,.2);
-    border: 1px solid rgba(255,255,255,.5);
-    color: #fff; border-radius: 20px;
-    padding: 5px 16px; font-size: 12px; cursor: pointer;
-    font-family: inherit;
-    transition: background .2s;
+  #authBtn, #importBtn {
+    background: none; border: 0; padding: 0;
+    color: var(--accent); font-size: 12px; cursor: pointer;
+    text-decoration: underline; text-underline-offset: 3px;
   }
-  #authBtn:hover { background: rgba(255,255,255,.35); }
-  #ownerBadge {
-    display: none; align-items: center; gap: 4px;
-    background: var(--yellow); color: #4A3000;
-    border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 700;
-  }
+  #authBtn:hover, #importBtn:hover { color: var(--text); }
+  #ownerBadge { display: none; color: var(--muted); }
 
   /* ─── メインコンテンツ ──────────────────────────────────── */
-  main { max-width: 760px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+  main { max-width: calc(760px + 2.5rem); margin: 0 auto; padding: .5rem 1.25rem 4rem; }
 
-  /* ─── 統計カード ────────────────────────────────────────── */
+  /* ─── 統計 ─────────────────────────────────────────────── */
   .stats-row {
     display: grid; grid-template-columns: repeat(3,1fr);
-    gap: 10px; margin-bottom: 1rem;
+    gap: 1.5rem; margin-bottom: 1.5rem;
   }
-  .stat {
-    background: var(--surface);
-    border-radius: 14px;
-    padding: .9rem 1rem;
-    border: 1px solid var(--border);
-    box-shadow: 0 2px 8px rgba(255,107,157,.08);
-  }
-  .stat-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
-  .stat-num   { font-size: 22px; font-weight: 700; color: var(--text); }
+  .stat-label { font-size: 11px; color: var(--muted); }
+  .stat-num   { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .stat-num.o { color: var(--owned); }
-  .stat-num.m { color: var(--pink); }
+  .stat-num.m { color: var(--miss); }
 
-  /* ─── プログレスバー ────────────────────────────────────── */
-  .pg-wrap { margin-bottom: 1.25rem; }
+  /* ─── 進捗バー ─────────────────────────────────────────── */
+  .pg-wrap { margin-bottom: 2rem; }
   .pg-label {
     display: flex; justify-content: space-between;
     font-size: 11px; color: var(--muted); margin-bottom: 6px;
   }
-  .pg-bar {
-    height: 8px; background: var(--border);
-    border-radius: 20px; overflow: hidden;
-  }
-  .pg-fill {
-    height: 100%; background: linear-gradient(90deg, var(--owned), var(--sky));
-    border-radius: 20px; transition: width .5s ease;
-  }
+  .pg-bar { height: 2px; background: var(--line); }
+  .pg-fill { height: 100%; background: var(--owned); transition: width .5s ease; }
 
   /* ─── 検索・フィルター ──────────────────────────────────── */
   .controls {
-    display: flex; gap: 8px;
-    margin-bottom: .75rem; flex-wrap: wrap; align-items: center;
+    display: flex; gap: 1.25rem;
+    margin-bottom: 1rem; flex-wrap: wrap; align-items: flex-end;
   }
   .search {
     flex: 1; min-width: 160px;
-    padding: 8px 14px;
-    border: 1.5px solid var(--border);
-    border-radius: 20px;
-    background: var(--surface);
-    font-family: inherit; font-size: 13px; color: var(--text);
-    transition: border-color .2s;
+    padding: 6px 0;
+    border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
+    background: transparent;
+    font-family: inherit; font-size: 14px; color: var(--text);
   }
-  .search:focus { outline: none; border-color: var(--pink); }
+  .search:focus { outline: none; border-bottom-color: var(--text); }
   .search::placeholder { color: var(--muted); }
 
-  .stog {
-    padding: 6px 12px; font-size: 11px;
-    border: 1.5px solid var(--border); border-radius: 20px;
-    background: transparent; color: var(--muted);
-    cursor: pointer; font-family: inherit; white-space: nowrap;
-    transition: all .15s;
+  .stog, .tab {
+    padding: 4px 0; font-size: 12px;
+    border: 0; border-bottom: 1px solid transparent; border-radius: 0;
+    background: none; color: var(--muted);
+    cursor: pointer; white-space: nowrap;
   }
-  .stog.active { background: var(--surface); color: var(--text); border-color: var(--purple); }
+  .stog:hover, .tab:hover { color: var(--text); }
+  .stog.active, .tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 700; }
+  .controls > div { gap: 1rem !important; }
 
-  .tabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 1rem; }
-  .tab {
-    padding: 5px 12px; font-size: 11px;
-    border: 1.5px solid var(--border); border-radius: 20px;
-    background: transparent; color: var(--muted);
-    cursor: pointer; font-family: inherit; white-space: nowrap;
-    transition: all .15s;
-  }
-  .tab.active { background: var(--pink); border-color: var(--pink); color: #fff; font-weight: 700; }
+  .tabs { display: flex; gap: .4rem 1.1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
 
   /* ─── CDリスト ──────────────────────────────────────────── */
   .sec-hdr {
-    font-size: 11px; font-weight: 700; color: var(--muted);
-    padding: 8px 4px 3px; letter-spacing: .08em;
-    border-bottom: 1px solid var(--border);
-    margin-top: 10px;
+    font-size: 12px; font-weight: 700; color: var(--text);
+    padding: 0 0 6px; margin-top: 2rem;
+    border-bottom: 1px solid var(--text);
+    font-variant-numeric: tabular-nums;
   }
   .cd-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 8px;
-    border-radius: 10px;
-    transition: background .12s;
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
   }
   .cd-item.editable { cursor: pointer; }
-  .cd-item.editable:hover { background: rgba(255,107,157,.07); }
+  .cd-item.editable:hover .cd-title { color: var(--accent); }
   .cd-item.is-owned .cd-title { color: var(--muted); }
 
   .check-icon {
-    width: 22px; height: 22px; flex-shrink: 0;
+    width: 16px; height: 16px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    border: 2px solid var(--border); border-radius: 6px;
-    font-size: 12px; font-weight: 700;
-    color: var(--owned); background: var(--surface);
-    transition: all .15s;
+    border: 1px solid var(--muted);
+    font-size: 11px; font-weight: 700; line-height: 1;
+    color: var(--bg);
   }
-  .is-owned .check-icon {
-    background: var(--owned); border-color: var(--owned); color: #fff;
-  }
+  .is-owned .check-icon { background: var(--owned); border-color: var(--owned); }
 
   .cd-info { flex: 1; min-width: 0; }
   .cd-title {
-    font-size: 13px; font-weight: 500; line-height: 1.3;
+    font-size: 14px; font-weight: 500; line-height: 1.4;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    transition: color .15s;
   }
-  .cd-ver  { font-weight: 400; font-size: 10px; color: var(--muted); margin-left: 3px; }
-  .cd-sub  { display: flex; gap: 6px; align-items: center; margin-top: 2px; flex-wrap: wrap; }
-  .cd-note { font-size: 10px; color: var(--muted); }
-  .official-link {
-    font-size: 10px;
-    color: var(--purple);
-    text-decoration: none;
-    font-weight: 700;
-  }
+  .cd-ver  { font-weight: 400; font-size: 11px; color: var(--muted); margin-left: 4px; }
+  .cd-sub  { display: flex; gap: 10px; align-items: baseline; margin-top: 2px; flex-wrap: wrap; }
+  .cd-note { font-size: 11px; color: var(--muted); }
+  .official-link { font-size: 11px; color: var(--accent); text-decoration: none; }
   .official-link:hover { text-decoration: underline; }
 
-  .badge {
-    font-size: 9px; padding: 1px 6px; border-radius: 8px;
-    font-weight: 700; white-space: nowrap;
-  }
-  .bdg-album  { background: #EAE6FF; color: #4A3BB5; }
-  .bdg-single { background: #D4F5EB; color: #0A6648; }
-  .bdg-insert { background: #FFE0EC; color: #8B1A3E; }
-  .bdg-unit   { background: #FFF0C2; color: #6B4200; }
-  .bdg-bd     { background: #D6EEFF; color: #0A4A80; }
-  .bdg-club   { background: #DFFFCA; color: #2A5E0A; }
-  .bdg-other  { background: #EEEAE6; color: #5A5249; }
+  /* 種別は色つきの文字だけで示す */
+  .badge { font-size: 11px; white-space: nowrap; color: var(--muted); }
 
   .cd-meta {
     display: flex; flex-direction: column; align-items: flex-end;
-    gap: 3px; flex-shrink: 0;
+    gap: 2px; flex-shrink: 0;
   }
-  .cd-date  { font-size: 10px; color: var(--muted); white-space: nowrap; }
-  .fut-badge {
-    font-size: 9px; padding: 1px 6px; border-radius: 8px;
-    background: #FFE0D6; color: #8B2A0A; font-weight: 700;
-  }
+  .cd-date  { font-size: 11px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .fut-badge { font-size: 11px; color: var(--miss); }
 
-  .empty {
-    text-align: center; padding: 3rem;
-    color: var(--muted); font-size: 14px;
-  }
+  .empty { padding: 3rem 0; color: var(--muted); font-size: 14px; }
 
-  /* ─── インポートボタン ──────────────────────────────────── */
-  #importBtn {
-    display: none; align-items: center; gap: 4px;
-    background: rgba(255,255,255,.2);
-    border: 1px solid rgba(255,255,255,.5);
-    color: #fff; border-radius: 20px;
-    padding: 5px 14px; font-size: 12px; cursor: pointer;
-    font-family: inherit;
-    transition: background .2s;
-  }
-  #importBtn:hover { background: rgba(255,255,255,.35); }
-
-  /* ─── モーダル ───────────────────────────────────────────── */
+  /* ─── インポート画面 ───────────────────────────────────── */
   .modal-overlay {
     position: fixed; inset: 0;
-    background: rgba(45,17,68,.55);
+    background: rgba(20, 16, 28, .5);
     display: flex; align-items: center; justify-content: center;
     padding: 1rem; z-index: 100;
   }
   .modal-box {
     background: var(--surface);
-    border-radius: 18px;
     max-width: 480px; width: 100%;
     max-height: 90vh; overflow-y: auto;
-    padding: 1.5rem;
-    box-shadow: 0 12px 40px rgba(45,17,68,.3);
+    padding: 1.75rem 1.5rem;
   }
-  .modal-title {
-    font-family: "Dela Gothic One", sans-serif;
-    font-size: 18px; color: var(--text); margin-bottom: .5rem;
-  }
-  .modal-desc { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 1rem; }
-  .modal-field { margin-bottom: 1rem; }
-  .modal-label { display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: .5rem; }
+  .modal-desc { font-size: 12px; color: var(--muted); line-height: 1.7; margin-bottom: 1.25rem; }
+  .modal-field { margin-bottom: 1.25rem; }
+  .modal-label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
   .modal-textarea {
     width: 100%; min-height: 90px; resize: vertical;
-    padding: 10px; border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 8px 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
+    background: transparent;
     font-family: inherit; font-size: 13px; color: var(--text);
   }
-  .modal-textarea:focus { outline: none; border-color: var(--pink); }
-  .modal-radio { display: block; font-size: 13px; color: var(--text); margin-bottom: 6px; cursor: pointer; }
-  .modal-radio input { margin-right: 6px; accent-color: var(--pink); }
+  .modal-textarea:focus { outline: none; border-bottom-color: var(--text); }
+  .modal-radio { display: block; font-size: 13px; margin-bottom: 6px; cursor: pointer; }
+  .modal-radio input { margin-right: 6px; accent-color: var(--accent); }
   .modal-result { font-size: 12px; color: var(--owned); font-weight: 700; min-height: 18px; margin-bottom: .5rem; }
-  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-  .modal-btn {
-    padding: 8px 18px; border-radius: 20px; font-size: 13px; font-family: inherit;
-    cursor: pointer; border: 1.5px solid var(--border); font-weight: 700;
+  .modal-actions {
+    display: flex; gap: 1.5rem; justify-content: flex-end; align-items: center;
+    padding-top: 1rem; border-top: 1px solid var(--line);
   }
-  .modal-btn.cancel { background: transparent; color: var(--muted); }
-  .modal-btn.run { background: var(--pink); color: #fff; border-color: var(--pink); }
-  .modal-btn.run:hover { background: #ff5189; }
+  .modal-btn {
+    padding: 0; border: 0; background: none;
+    font-size: 13px; cursor: pointer;
+  }
+  .modal-btn.cancel { color: var(--muted); }
+  .modal-btn.run { color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+  .modal-btn:hover { color: var(--text); }
 
   /* ─── 注記 ───────────────────────────────────────────────── */
   .owner-note {
-    text-align: center; font-size: 11px; color: var(--muted);
-    margin-top: 1rem; padding: .5rem;
-    border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--muted); line-height: 1.8;
+    margin-top: 2.5rem; padding-top: 1rem;
+    border-top: 1px solid var(--line);
   }
 
   @media (max-width: 480px) {
-    .stats-row { grid-template-columns: repeat(3,1fr); gap: 6px; }
-    .stat-num  { font-size: 18px; }
-    header     { padding: 1.5rem 1rem 1.2rem; }
+    .stats-row { gap: 1rem; }
+    .stat-num  { font-size: 20px; }
+    header     { padding: 2rem 1rem 1rem; }
+    main       { padding-inline: 1rem; }
   }
 </style>
 </head>
@@ -679,12 +614,13 @@
 
 <header>
   <div class="header-inner">
+    <a class="home-link" href="https://frella-lielliver.github.io/">← ホームへ戻る</a>
     <div class="site-title">Liella! CD Collection</div>
     <div class="site-sub">Love Live! Superstar!! Liella! ディスコグラフィー コレクション管理</div>
     <div class="auth-row">
       <button id="authBtn">読み込み中…</button>
-      <span id="ownerBadge">★ オーナー編集モード</span>
-      <button id="importBtn" onclick="openImport()" style="display:none">⬆ インポート</button>
+      <span id="ownerBadge">編集モード</span>
+      <button id="importBtn" onclick="openImport()" style="display:none">インポート</button>
     </div>
   </div>
 </header>
